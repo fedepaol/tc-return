@@ -1,0 +1,48 @@
+---
+version: '3'
+services:
+
+    first:
+        image: testfedora
+        build:
+            context: .
+        privileged: true
+        entrypoint: sleep inf
+        volumes:
+            - ./:/localbpf
+        networks:
+            primary:
+                ipv4_address: 10.111.220.11
+            second:
+                ipv4_address: 10.111.221.11
+
+    second:
+        image: testfedora
+        privileged: true
+        volumes:
+            - ./:/localbpf
+        entrypoint: sleep inf
+        networks:
+            second:
+                ipv4_address: 10.111.221.21
+    third:
+        image: testfedora
+        privileged: true
+        volumes:
+            - ./:/localbpf
+        entrypoint: sleep inf
+        networks:
+            second:
+                ipv4_address: 10.111.221.22
+
+networks:
+    primary:
+        driver: "bridge"
+        ipam:
+            config:
+                - subnet: 10.111.220.1/24
+    second:
+        driver: "bridge"
+        ipam:
+            config:
+                - subnet: 10.111.221.1/24
