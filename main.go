@@ -2,17 +2,20 @@ package main
 
 import (
 	"context"
-	"encoding/binary"
 	"fmt"
 	"log"
 	"net"
 	"os"
 	"time"
 
+	"github.com/PraserX/ipconv"
 	tc "github.com/florianl/go-tc"
-	helper "github.com/florianl/go-tc/core"
 	"golang.org/x/sys/unix"
 )
+
+func TC_H_MAKE(maj, min uint32) uint32 {
+	return ((maj & 0xFFFF0000) | (min & 0x0000FFFF))
+}
 
 //go:generate go run github.com/cilium/ebpf/cmd/bpf2go redirect ./ebpf/redirect.c -- -I./ebpf
 
@@ -26,7 +29,7 @@ func stringPtr(v string) *string {
 
 func main() {
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	objs := &redirectObjects{}
@@ -59,7 +62,7 @@ func main() {
 		Msg: tc.Msg{
 			Family:  unix.AF_UNSPEC,
 			Ifindex: uint32(devID.Index),
-			Handle:  helper.BuildHandle(0xFFFF, 0x0000),
+			Handle:  TC_H_MAKE(tc.HandleIngress, 0x0000),
 			Parent:  tc.HandleIngress,
 		},
 		Attribute: tc.Attribute{
@@ -78,7 +81,7 @@ func main() {
 			Family:  unix.AF_UNSPEC,
 			Ifindex: uint32(devID.Index),
 			Handle:  0,
-			Parent:  0xFFFFFFF2,
+			Parent:  TC_H_MAKE(tc.HandleIngress, tc.HandleMinEgress),
 			Info:    0x10300,
 		},
 		Attribute: tc.Attribute{
@@ -102,7 +105,13 @@ func main() {
 	}
 
 	ip := net.ParseIP("192.168.1.5")
-	key := binary.BigEndian.Uint32(ip)
+	key, err := ipconv.IPv4ToInt(ip)
+	fmt.Println("FEDE key", key, ip)
+	if err != nil {
+		fmt.Println("convert ip failed", err)
+		return
+	}
+
 	err = objs.RedirectMapIpv4.Put(key, uint32(eth1ID.Index))
 	if err != nil {
 		fmt.Println("add to map failed", err)
@@ -110,20 +119,15 @@ func main() {
 	}
 	<-ctx.Done()
 
-	if err := tcnl.Filter().Delete(&tc.Object{
-		Msg: tc.Msg{
-			Family:  unix.AF_UNSPEC,
-			Ifindex: uint32(devID.Index),
-			Handle:  1,
-			Parent:  0xFFFFFFF2,
-			Info:    0x10000,
-		},
-		Attribute: tc.Attribute{
-			Kind: "bpf",
-		},
-	}); err != nil {
+	if err := tcnl.Filter().Delete(&filter); err != nil {
 		fmt.Fprintf(os.Stderr, "could not delete eBPF filter: %v\n", err)
+		return
+	}
+	if err := tcnl.Qdisc().Delete(&qdisc); err != nil {
+		fmt.Fprintf(os.Stderr, "could not delete eBPF qdisc: %v\n", err)
 		return
 	}
 
 }
+
+// Made it work following https://github.com/florianl/tc-skeleton/discussions/2

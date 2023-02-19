@@ -1,3 +1,5 @@
+github.com/PraserX/ipconv v1.2.0 h1:3bboP9EDfsuMF5C3qM25OmZA4+cCfk1Ahpx8zn5G2tM=
+github.com/PraserX/ipconv v1.2.0/go.mod h1:aBiLM1bDAjp1++Q0Sp3IrGbPd49b74IUgoRWod6EtPY=
 github.com/cilium/ebpf v0.5.0/go.mod h1:4tRaxcgiL706VnOzHOdBlY8IEAIdxINsQBcU4xJJXRs=
 github.com/cilium/ebpf v0.7.0/go.mod h1:/oI2+1shJiTGAMgl6/RgJr36Eo1jzrRcAWbcXO2usCA=
 github.com/cilium/ebpf v0.8.1/go.mod h1:f5zLIM0FSNuAkSyLAN7X+Hy6yznlF1mNiWUMfxMtrgk=

@@ -3,6 +3,7 @@ module github.com/florianl/tc-skeleton
 go 1.19
 
 require (
+	github.com/PraserX/ipconv v1.2.0
 	github.com/cilium/ebpf v0.9.3
 	github.com/florianl/go-tc v0.4.1
 	golang.org/x/sys v0.3.0
