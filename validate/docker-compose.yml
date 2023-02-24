@@ -7,7 +7,7 @@ services:
         build:
             context: .
         privileged: true
-        entrypoint: sleep inf
+        entrypoint: /localbpf/entrypoints/first.sh
         volumes:
             - ./:/localbpf
         networks:
@@ -21,19 +21,21 @@ services:
         privileged: true
         volumes:
             - ./:/localbpf
-        entrypoint: sleep inf
+        entrypoint: /localbpf/entrypoints/second.sh
         networks:
             second:
                 ipv4_address: 10.111.221.21
+            third:
+                ipv4_address: 10.111.222.21
     third:
         image: testfedora
         privileged: true
         volumes:
             - ./:/localbpf
-        entrypoint: sleep inf
+        entrypoint: /localbpf/entrypoints/third.sh
         networks:
-            second:
-                ipv4_address: 10.111.221.22
+            third:
+                ipv4_address: 10.111.222.22
 
 networks:
     primary:
@@ -46,3 +48,9 @@ networks:
         ipam:
             config:
                 - subnet: 10.111.221.1/24
+    third:
+        driver: "bridge"
+        ipam:
+            config:
+                - subnet: 10.111.222.1/24
+        
