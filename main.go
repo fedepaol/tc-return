@@ -6,6 +6,7 @@ import (
 	"net"
 
 	"github.com/PraserX/ipconv"
+	"github.com/cilium/ebpf"
 	"github.com/vishvananda/netlink"
 
 	"golang.org/x/sys/unix"
@@ -20,14 +21,13 @@ func main() {
 	}
 	defer objs.Close()
 
-	attachFilter("eth0", objs)
+	attachFilter("eth0", objs.redirectPrograms.Redirect)
 	ip := net.ParseIP("192.168.1.5")
 	nextHopIP := net.ParseIP("10.111.221.21")
-	enableRedirect(ip, nextHopIP, "eth1", objs)
+	enableRedirect(ip, nextHopIP, "eth1", objs.RedirectMapIpv4)
 }
 
-func attachFilter(attachTo string, objs *redirectObjects) error {
-	redirect := objs.redirectPrograms.Redirect
+func attachFilter(attachTo string, program *ebpf.Program) error {
 	devID, err := net.InterfaceByName(attachTo)
 	if err != nil {
 		return fmt.Errorf("could not get interface ID: %w", err)
@@ -54,8 +54,8 @@ func attachFilter(attachTo string, objs *redirectObjects) error {
 			Handle:    1,
 			Protocol:  unix.ETH_P_ALL,
 		},
-		Fd:           redirect.FD(),
-		Name:         redirect.String(),
+		Fd:           program.FD(),
+		Name:         program.String(),
 		DirectAction: true,
 	}
 
@@ -65,7 +65,7 @@ func attachFilter(attachTo string, objs *redirectObjects) error {
 	return nil
 }
 
-func enableRedirect(src, nextHop net.IP, interfaceName string, objs *redirectObjects) error {
+func enableRedirect(src, nextHop net.IP, interfaceName string, ebpfMap *ebpf.Map) error {
 	eth1ID, err := net.InterfaceByName(interfaceName)
 	if err != nil {
 		return fmt.Errorf("could not get interface ID: %w", err)
@@ -87,7 +87,7 @@ func enableRedirect(src, nextHop net.IP, interfaceName string, objs *redirectObj
 		uint32(eth1ID.Index),
 		next,
 	}
-	err = objs.RedirectMapIpv4.Put(key, record)
+	err = ebpfMap.Put(key, record)
 	if err != nil {
 		return fmt.Errorf("add to map failed %w", err)
 	}

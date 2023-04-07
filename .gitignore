@@ -1,2 +1,3 @@
-tc-skeleton
-ebpf/drop
+tc-egress
+*.o
+*.swp

@@ -2,39 +2,39 @@
 version: '3'
 services:
 
-    first:
+    server:
         image: testfedora
         build:
             context: .
         privileged: true
-        entrypoint: /localbpf/entrypoints/first.sh
+        entrypoint: /local/entrypoints/server.sh
         volumes:
-            - ./:/localbpf
+            - ./:/local
         networks:
             primary:
                 ipv4_address: 10.111.220.11
-            second:
+            server_to_router:
                 ipv4_address: 10.111.221.11
 
-    second:
+    router:
         image: testfedora
         privileged: true
         volumes:
-            - ./:/localbpf
-        entrypoint: /localbpf/entrypoints/second.sh
+            - ./:/local
+        entrypoint: /local/entrypoints/router.sh
         networks:
-            second:
+            server_to_router:
                 ipv4_address: 10.111.221.21
-            third:
+            router_to_client:
                 ipv4_address: 10.111.222.21
-    third:
+    client:
         image: testfedora
         privileged: true
         volumes:
-            - ./:/localbpf
-        entrypoint: /localbpf/entrypoints/third.sh
+            - ./:/local
+        entrypoint: /local/entrypoints/client.sh
         networks:
-            third:
+            router_to_client:
                 ipv4_address: 10.111.222.22
 
 networks:
@@ -43,12 +43,12 @@ networks:
         ipam:
             config:
                 - subnet: 10.111.220.1/24
-    second:
+    server_to_router:
         driver: "bridge"
         ipam:
             config:
                 - subnet: 10.111.221.1/24
-    third:
+    router_to_client:
         driver: "bridge"
         ipam:
             config:
